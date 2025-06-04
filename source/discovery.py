@@ -19,6 +19,7 @@ def discover_simulation_parameters(df_train, df_test, df_val, data_dir, num_case
     """
     Discover the simulation model from the training data.
     """
+    # split into train, test, val
     df_train, agent_to_resource = preprocess(df_train)
     df_test, _ = preprocess(df_test)
     df_val, _ = preprocess(df_val)
@@ -31,16 +32,17 @@ def discover_simulation_parameters(df_train, df_test, df_val, data_dir, num_case
     activities_without_waiting_time = activities_with_zero_waiting_time(df_train)
 
     # extract roles and calendars  
-    roles = discover_roles_and_calendars(df_train_without_end_activity)
-    res_calendars, _, _, _, _ = discover_calendar_per_agent(df_train_without_end_activity)
+    roles = discover_roles_and_calendars(df_train_without_end_activity) # agents clustered into functional groups
+    res_calendars, _, _, _, _ = discover_calendar_per_agent(df_train_without_end_activity) # working schedules per resource
 
-    activity_durations_dict = compute_activity_duration_distribution_per_agent(df_train, res_calendars, roles)
+    activity_durations_dict = compute_activity_duration_distribution_per_agent(df_train, res_calendars, roles) # Fits statistical distributions (normal, lognorm, gamma, etc.) per (agent, activity) pair. I dont get the dict
 
     # define mapping of agents to activities based on event log
-    agent_activity_mapping = df_train.groupby('agent')['activity_name'].unique().apply(list).to_dict()
+    agent_activity_mapping = df_train.groupby('agent')['activity_name'].unique().apply(list).to_dict() # Captures which agents perform which activities.
 
-    transition_probabilities_autonomous = compute_activity_transition_dict(df_train)
-    agent_transition_probabilities_autonomous = calculate_agent_handover_probabilities_per_activity(df_train)
+
+    transition_probabilities_autonomous = compute_activity_transition_dict(df_train) 
+    agent_transition_probabilities_autonomous = calculate_agent_handover_probabilities_per_activity(df_train) # I am here
     agent_transition_probabilities = None
     transition_probabilities = compute_activity_transition_dict_global(df_train)
 
@@ -54,6 +56,7 @@ def discover_simulation_parameters(df_train, df_test, df_val, data_dir, num_case
     # sample arrival times for training and validation data
     case_arrival_times, train_params = get_case_arrival_times(df_train, start_timestamp=START_TIME, num_cases_to_simulate=num_cases_to_simulate, train=True)
     case_arrival_times_val, _ = get_case_arrival_times(df_val, start_timestamp=START_TIME_VAL, num_cases_to_simulate=num_cases_to_simulate_val, train=False, train_params=train_params)
+
 
     simulation_parameters = {
         'activity_durations_dict': activity_durations_dict,
@@ -75,7 +78,6 @@ def discover_simulation_parameters(df_train, df_test, df_val, data_dir, num_case
 
     simulation_parameters = determine_agent_behavior_type_and_extraneous_delays(simulation_parameters, df_train, df_val, case_arrival_times_val, central_orchestration, discover_extr_delays)
     simulation_parameters['start_timestamp'] = START_TIME
-
 
     return df_train, simulation_parameters
 
@@ -318,7 +320,8 @@ def activities_with_zero_waiting_time(df, threshold=0.99):
 
 def get_prerequisites_per_activity(data):
     preceding_activities_dict = generate_preceding_activities_dict(data)
-    print(f"preceding_activities_dict: {preceding_activities_dict}")
+    # I commented out
+    # print(f"preceding_activities_dict: {preceding_activities_dict}")
     # x=y
     return preceding_activities_dict, None
 
